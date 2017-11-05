@@ -1,0 +1,24 @@
+@page
+
+<h1>Index</h1>
+
+<div class="d-flex h-100 w-100 align-items-center justify-content-center">
+  <span id="code-input" contenteditable="true" class="font-weight-bold code-input">c0d3</span>
+  <button id="connect-btn" class="btn btn-primary">connect</button>
+</div>
+
+<div id="content"></div>
+
+@section Script {
+  <script>
+    const app = new prsntr.App();
+    const connectBtn = document.getElementById('connect-btn');
+    const codeInput = document.getElementById('code-input');
+    const contentElement = document.getElementById('content');
+    
+    app.content.subscribe(x => contentElement.innerHTML = x);
+    app.connect();
+
+    connectBtn.addEventListener('click', () => app.sendCode(codeInput.innerText));
+  </script>
+}

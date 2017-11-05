@@ -1,0 +1,45 @@
+@page
+
+<h1>Content</h1>
+<p>This page will send the content...</p>
+<hr>
+<p>Use this code to connect to prsntr <strong id="code"></strong></p>
+<hr>
+<input type="checkbox" id="send-as-image" />
+
+<div id="content" contenteditable="true">
+  <h1>Muhahha</h1>
+  Please enter here your content...
+</div>
+<button id="send-btn">send</button>
+
+@section Script {
+  <script src="scripts/rasterizeHTML.allinone.js"></script>
+  <script>
+    const app = new prsntr.App();
+    const codeElement = document.getElementById('code');
+    const sendButton = document.getElementById('send-btn');
+    const contentElement = document.getElementById('content');
+    const sendAsImage = document.getElementById('send-as-image');
+
+    app.code.subscribe(x => codeElement.innerText = x);
+
+    app.connect();
+    app.connected.subscribe(x => app.createGroup());
+
+    sendButton.addEventListener('click', () => {
+      if (sendAsImage.checked) {
+        let canvas = document.createElement('canvas');
+        rasterizeHTML.drawHTML(decode(contentElement.innerHTML), canvas);
+        setTimeout(() => {
+          const dataString = canvas.toDataURL();
+          app.sendContent('<img src="' + dataString + '" />');
+        }, 200);
+      } else {
+        app.sendContent(contentElement.innerHTML);
+      }
+    });
+    // sendButton.addEventListener('click', () => app.sendContent(contentElement.innerHTML));
+
+  </script>
+}
