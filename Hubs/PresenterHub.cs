@@ -8,30 +8,30 @@ using System.Text;
 public class PresenterHub : Hub
 {
   // stores code and group name
-  private Dictionary<string, string> codeStore;
+  private Dictionary<string, string> _codeStore;
   // connectionId -> groupname
-  private Dictionary<string, string> groups;  
+  private Dictionary<string, string> _groups;  
   private readonly static int[] codeCharacters = Enumerable.Range('a', 26).Concat(Enumerable.Range('0', 10)).ToArray();
 
   public PresenterHub(PresenterService presenterService)
   {
-    this.codeStore = presenterService.CodeStore;
-    this.groups = presenterService.Groups;
+    _codeStore = presenterService.CodeStore;
+    _groups = presenterService.Groups;
   }
   public async Task ConnectWithCode(string code)
   {
-    if (this.codeStore.ContainsKey(code))
+    if (_codeStore.ContainsKey(code))
     {
-      var groupName = this.codeStore.GetValueOrDefault(code);
+      var groupName = _codeStore.GetValueOrDefault(code);
       if (!string.IsNullOrWhiteSpace(groupName))
       {
-        await this.Groups.AddAsync(this.Context.ConnectionId, groupName);
+        await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
         // await this.Clients.Client(this.Context.ConnectionId).InvokeAsync("connectedToGroup", groupName, );
-        await this.Clients.Group(groupName).InvokeAsync("connectedToGroup", groupName, this.Context.User.Identity.Name);
+        await Clients.Group(groupName).SendAsync("connectedToGroup", groupName, Context.User.Identity.Name);
         return;
       }
     }
-    await this.Clients.Client(this.Context.ConnectionId).InvokeAsync("error", "no group found");
+    await Clients.Client(Context.ConnectionId).SendAsync("error", "no group found");
   }
 
   public async Task CreateGroup()
@@ -40,29 +40,29 @@ public class PresenterHub : Hub
     do
     {
       code = GenerateCode(4);
-    } while (this.codeStore.ContainsKey(code));
+    } while (_codeStore.ContainsKey(code));
 
-    var groupName = this.Context.User.Identity.Name ?? "1234-abc";
-    await this.Groups.AddAsync(this.Context.ConnectionId, groupName);
-    this.codeStore.Add(code, groupName);
-    this.groups.Add(this.Context.ConnectionId, groupName);
+    var groupName = Context.User.Identity.Name ?? "1234-abc";
+    await Groups.AddToGroupAsync(this.Context.ConnectionId, groupName);
+    _codeStore.Add(code, groupName);
+    _groups.Add(Context.ConnectionId, groupName);
 
-    await this.Clients.Client(this.Context.ConnectionId).InvokeAsync("createdGroup", groupName, code);
+    await Clients.Client(Context.ConnectionId).SendAsync("createdGroup", groupName, code);
   }
 
   public async Task SendContent(string content)
   {
-    string groupName = this.groups.GetValueOrDefault(this.Context.ConnectionId);
+    string groupName = _groups.GetValueOrDefault(Context.ConnectionId);
     if (!string.IsNullOrEmpty(groupName))
     {
       string decodedContent = System.Net.WebUtility.HtmlDecode(content);
-      await this.Clients.Group(groupName).InvokeAsync("broadcastContent", decodedContent);
+      await Clients.Group(groupName).SendAsync("broadcastContent", decodedContent);
     }
   }
 
   public override async Task OnConnectedAsync()
   {
-    await this.Clients.Client(this.Context.ConnectionId).InvokeAsync("connected", this.Context.User.Identity.Name);
+    await Clients.Client(Context.ConnectionId).SendAsync("connected", Context.User.Identity.Name);
   }
 
   private string GenerateCode(int length)
